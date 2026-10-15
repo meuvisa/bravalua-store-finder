@@ -167,7 +167,7 @@
           '<button type="submit" class="bv-btn-search">' + ICON_SEARCH + esc(t.search) + '</button>' +
         '</form>' +
         ('geolocation' in navigator ? '<button type="button" class="bv-locate">' + ICON_LOCATE + '<span>' + esc(t.locate) + '</span></button>' : '') +
-        '<p class="bv-msg" role="status" aria-live="polite"></p>' +
+        '<div class="bv-msg" role="status" aria-live="polite"></div>' +
       '</div></section>' +
       '<div class="bv-results bv-wrap" id="' + id + '-results">' +
         '<div class="bv-mapcol">' +
@@ -229,6 +229,9 @@
       var card = e.target.closest('.bv-card');
       if (card && isMobile() && !e.target.closest('a,button')) self.select(card.getAttribute('data-id'), true);
       if (e.target.closest('.bv-sheet-close')) { self.selected = null; self.render(); }
+      var tr = e.target.closest('[data-try]');
+      if (tr) { self.el.input.value = self.query = tr.getAttribute('data-try'); self.search(self.query); return; }
+      if (e.target.closest('[data-try-locate]')) { self.locate(); return; }
       if (e.target.closest('.bv-gate-btn')) { store(CONSENT_KEY, 'yes'); self.startGoogle(); }
     });
   };
@@ -360,8 +363,23 @@
     var list = this.sorted();
     var nearestId = o && list[0] ? list[0].id : null;
 
-    el.msg.textContent = this.message === 'found' ? t.found(o.label === null ? t.myLocation : o.label)
-      : this.message ? t[this.message] : '';
+    el.msg.className = 'bv-msg';
+    if (this.message === 'found') {
+      el.msg.textContent = t.found(o.label === null ? t.myLocation : o.label);
+    } else if (this.message === 'notFound' || this.message === 'geoError') {
+      /* Short warning with one-tap examples instead of a long sentence. */
+      var nf = this.message === 'notFound';
+      el.msg.className = 'bv-msg is-error';
+      el.msg.innerHTML = '<svg class="bv-msg-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="7" x2="12" y2="13"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>' +
+        '<div class="bv-msg-body"><strong>' + esc(nf ? t.notFound : t.geoErrorTitle) + '</strong>' +
+        '<span>' + esc(nf ? t.notFoundHint : t.geoError) + '</span>' +
+        (nf ? '<div class="bv-try">' + ['10435', 'Kreuzberg', 'Neukölln'].map(function (x) {
+          return '<button type="button" data-try="' + esc(x) + '">' + esc(x) + '</button>';
+        }).join('') + (el.locate ? '<button type="button" data-try-locate>' + ICON_LOCATE + esc(t.locate) + '</button>' : '') + '</div>' : '') +
+        '</div>';
+    } else {
+      el.msg.textContent = '';
+    }
 
     if (el.locate) { el.locate.disabled = false; el.locate.querySelector('span').textContent = t.locate; }
 
