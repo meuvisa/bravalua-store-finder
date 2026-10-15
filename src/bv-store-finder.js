@@ -5,6 +5,7 @@
  *   mapId     Google Map ID (needed for brand-coloured pins). Defaults to Google's DEMO_MAP_ID.
  *   consent   'none' | 'click' (show a "load map" button) | 'complianz' (follow the Complianz banner).
  *   heroLangs false = no DE/EN/PT switch inside the block (use a [data-bv-langs] element elsewhere, e.g. the header).
+ *   scrollOffset  px kept free above the results when auto-scrolling (sticky headers). Default 12.
  *   privacyUrl, lang ('de' | 'en' | 'pt', otherwise from ?lang=, saved choice or <html lang>).
  *   stores    optional list overriding the bundled stores (the WordPress plugin passes them here).
  */
@@ -267,12 +268,15 @@
     }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
   };
 
+  /* After a successful search, bring map + list into view on every screen size.
+     CFG.scrollOffset leaves room for a sticky site header (WordPress themes). */
   StoreFinder.prototype.afterSearch = function () {
     var el = this.el;
-    if (isMobile()) {
-      el.input.blur();
-      setTimeout(function () { el.results.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
-    }
+    if (isMobile()) el.input.blur();
+    setTimeout(function () {
+      var top = el.results.getBoundingClientRect().top + w.pageYOffset - (CFG.scrollOffset || 12);
+      w.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    }, 80);
   };
 
   /* ----- autocomplete (Places API New, only once Google is loaded) ----- */
