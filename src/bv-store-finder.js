@@ -4,6 +4,7 @@
  *   apiKey    Google Maps key (restricted by domain). Empty = schematic map + offline PLZ search.
  *   mapId     Google Map ID (needed for brand-coloured pins). Defaults to Google's DEMO_MAP_ID.
  *   consent   'none' | 'click' (show a "load map" button) | 'complianz' (follow the Complianz banner).
+ *   heroLangs false = no DE/EN/PT switch inside the block (use a [data-bv-langs] element elsewhere, e.g. the header).
  *   privacyUrl, lang ('de' | 'en' | 'pt', otherwise from ?lang=, saved choice or <html lang>).
  *   stores    optional list overriding the bundled stores (the WordPress plugin passes them here).
  */
@@ -58,8 +59,8 @@
     lang = l; store(STORE_KEY, l);
     langListeners.forEach(function (fn) { fn(l); });
   }
-  function langButtons() {
-    return '<div class="bv-langs" role="group" aria-label="Sprache / Language / Idioma">' + LANGS.map(function (l) {
+  function langButtons(extra) {
+    return '<div class="bv-langs' + (extra || '') + '" role="group" aria-label="Sprache / Language / Idioma">' + LANGS.map(function (l) {
       return '<button type="button" class="bv-lang" data-lang="' + l[0] + '" aria-pressed="' + (lang === l[0]) + '" aria-label="' + l[1] + '" lang="' + l[0] + '">' + l[0].toUpperCase() + '</button>';
     }).join('') + '</div>';
   }
@@ -153,7 +154,7 @@
     this.root.classList.add('bv-root');
     this.root.innerHTML =
       '<section class="bv-hero" aria-labelledby="' + id + '-h"><div class="bv-wrap">' +
-        '<div class="bv-hero-top">' + langButtons() + '</div>' +
+        (CFG.heroLangs === false ? '' : '<div class="bv-hero-top">' + langButtons() + '</div>') +
         '<h2 class="bv-title" id="' + id + '-h">' + esc(t.title) + '</h2>' +
         '<p class="bv-sub">' + esc(t.sub) + '</p>' +
         '<form class="bv-form" role="search" novalidate>' +
@@ -265,9 +266,7 @@
 
   StoreFinder.prototype.afterSearch = function () {
     var el = this.el;
-    if (isMobile() && !this.map) {
-      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    } else if (isMobile()) {
+    if (isMobile()) {
       el.input.blur();
       setTimeout(function () { el.results.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
     }
@@ -344,7 +343,9 @@
     if (!fromUser) return;
     var card = this.el.list.querySelector('.bv-card[data-id="' + id + '"]');
     var list = this.el.list.querySelector('.bv-list');
-    if (isMobile()) {
+    if (isMobile() && !this.map) {
+      if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else if (isMobile()) {
       /* On the phone the sheet over the map shows the store; bring the map into view. */
       var r = this.el.results.querySelector('.bv-map').getBoundingClientRect();
       if (r.top < 0 || r.bottom > w.innerHeight) this.el.results.querySelector('.bv-map').scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -575,6 +576,17 @@
   function boot() {
     d.querySelectorAll('[data-bv-store-finder]').forEach(function (el) { if (!el.__bv) el.__bv = new StoreFinder(el); });
     d.querySelectorAll('[data-bv-products]').forEach(function (el) { if (!el.__bv) el.__bv = new Products(el); });
+    /* Stand-alone language switch, e.g. in the page header. */
+    function renderLangs() {
+      d.querySelectorAll('[data-bv-langs]').forEach(function (el) {
+        el.classList.add('bv-root');
+        el.innerHTML = langButtons(' bv-langs--head');
+        el.querySelectorAll('.bv-lang').forEach(function (b) {
+          b.addEventListener('click', function () { setLang(b.getAttribute('data-lang')); });
+        });
+      });
+    }
+    langListeners.push(renderLangs); renderLangs();
     /* Language switch also applies to anything else on the page marked with data-bv-i18n. */
     function syncPage() {
       d.querySelectorAll('[data-bv-i18n]').forEach(function (el) {

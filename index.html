@@ -15,9 +15,12 @@
   /* Demo page chrome only (on bravalua.de the theme provides header and footer). */
   html, body { margin: 0; background: #fff; }
   .demo-head { border-bottom: 1px solid #F0E3CC; background: #fff; }
-  .demo-head-in { max-width: 1280px; margin: 0 auto; padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-  .demo-head img { height: 52px; width: auto; display: block; }
-  .demo-badge { font: 700 12px/1 'DM Sans', sans-serif; letter-spacing: .06em; text-transform: uppercase; color: #43291A; background: #FFFBD6; border: 1px solid #F0D9AE; border-radius: 999px; padding: 7px 12px; white-space: nowrap; }
+  .demo-head-in { max-width: 1280px; margin: 0 auto; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .demo-head img { height: 56px; width: auto; display: block; }
+  .demo-nav { display: flex; align-items: center; gap: 12px; }
+  .demo-site { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border: 2px solid #43291A; border-radius: 8px;
+    font: 700 14px/1 'Josefin Sans', sans-serif; letter-spacing: .08em; text-transform: uppercase; color: #43291A; text-decoration: none; padding-top: 2px; }
+  .demo-site:hover { background: #FFFBD6; }
   .demo-foot { background: #fff; font-family: 'Poppins', sans-serif; color: #4A4A4A; }
   .demo-foot-in { max-width: 1440px; margin: 0 auto; padding: 32px 20px 48px; display: flex; flex-direction: column; align-items: center; gap: 40px; }
   .demo-social a { width: 44px; height: 44px; border-radius: 6px; background: #5F5F5F; color: #fff; display: flex; align-items: center; justify-content: center; }
@@ -27,7 +30,11 @@
   .demo-legal { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 36px; font-size: 18px; }
   .demo-legal a { color: #4A4A4A; text-decoration: none; min-height: 44px; display: inline-flex; align-items: center; }
   @media (max-width: 520px) {
-    .demo-head img { height: 40px; }
+    .demo-head-in { padding: 12px 16px; gap: 8px; }
+    .demo-head img { height: 38px; }
+    .demo-nav { gap: 6px; }
+    .demo-site { padding: 0 10px; }
+    .demo-site span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
     .demo-rule { gap: 18px; }
     .demo-rule img { height: 40px; }
     .demo-legal { font-size: 16px; gap: 0 22px; }
@@ -37,8 +44,14 @@
 <body>
 <header class="demo-head">
   <div class="demo-head-in">
-    <img src="assets/logo-bravalua.webp" alt="Bravalua" width="1600" height="545">
-    <span class="demo-badge" data-bv-i18n data-de="Prototyp" data-en="Prototype" data-pt="Protótipo">Prototyp</span>
+    <a href="https://bravalua.de/" aria-label="Bravalua: zur Startseite"><img src="assets/logo-bravalua.webp" alt="Bravalua" width="1600" height="545"></a>
+    <nav class="demo-nav" aria-label="Navigation">
+      <a class="demo-site" href="https://bravalua.de/">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11 12 3l9 8"/><path d="M5 10v10h14V10"/></svg>
+        <span data-bv-i18n data-de="Zur Website" data-en="Website" data-pt="Ir para o site">Zur Website</span>
+      </a>
+      <div data-bv-langs></div>
+    </nav>
   </div>
 </header>
 

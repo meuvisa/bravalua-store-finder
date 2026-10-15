@@ -69,7 +69,7 @@
   var T = {
     de: {
       title: 'Finde Bravalua in deiner Nähe',
-      sub: 'Gib deine Postleitzahl oder Adresse ein. Wir zeigen dir die nächsten Geschäfte mit brasilianischen Spezialitäten von Bravalua.',
+      sub: 'Gib deine Postleitzahl oder Adresse ein – wir zeigen dir die nächsten Geschäfte mit brasilianischen Spezialitäten von Bravalua.',
       placeholder: 'PLZ oder Adresse, z. B. 10967 oder Kreuzberg', search: 'Suchen',
       locate: 'Meinen Standort verwenden', locating: 'Standort wird ermittelt …', myLocation: 'Dein Standort',
       geoError: 'Dein Standort ist gerade nicht verfügbar. Gib bitte deine PLZ oder Adresse ein.',

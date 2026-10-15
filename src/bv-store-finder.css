@@ -33,6 +33,9 @@
   background: transparent; cursor: pointer; padding: 0 6px;
 }
 .bv-lang[aria-pressed="true"] { background: #fff; }
+/* Header variant (as in the design): light borders, active language in logo yellow. */
+.bv-langs--head .bv-lang { border-color: var(--bv-line); background: #fff; }
+.bv-langs--head .bv-lang[aria-pressed="true"] { border-color: var(--bv-brown); background: var(--bv-logo); }
 
 /* Hero / search */
 .bv-hero { background: var(--bv-yellow); }
