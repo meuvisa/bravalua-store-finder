@@ -6,6 +6,6 @@ window.BV_CONFIG = {
   defaultLang: 'pt',   /* first visit opens in Portuguese; switch order is PT, DE, EN */
   syncHtmlLang: true,
   heroLangs: false,    /* the demo shows DE/EN/PT in the header instead */
-  consent: 'click',    /* 'click' = "load map" button (DSGVO); on WordPress use 'complianz' */
+  consent: 'none',     /* demo loads the map directly; on bravalua.de use 'complianz' (follows the cookie banner) */
   privacyUrl: 'https://bravalua.de/datenschutzerklaerung/'
 };

@@ -145,7 +145,8 @@
 .bv-empty h2 { font-family: var(--bv-head); font-weight: 700; font-size: 22px; letter-spacing: .04em; text-transform: uppercase; }
 .bv-empty p { font-size: 16px; color: var(--bv-brown-3); }
 .bv-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-.bv-card { background: #fff; border: 2px solid var(--bv-line); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; scroll-margin: 8px; }
+.bv-card { background: #fff; border: 2px solid var(--bv-line); border-radius: 16px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; scroll-margin: 8px; cursor: pointer; transition: border-color .15s, background-color .15s; }
+.bv-card:hover { border-color: #C9B49A; }
 .bv-card.is-sel { background: var(--bv-cream); border-color: var(--bv-brown); }
 .bv-card-top { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
 .bv-store-name { font-family: var(--bv-head); font-weight: 700; font-size: 19px; letter-spacing: .03em; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
@@ -154,10 +155,8 @@
 .bv-dist { flex: 0 0 auto; font-weight: 700; font-size: 15px; background: var(--bv-cream); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
 .bv-card.is-sel .bv-dist { background: #fff; }
 .bv-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.bv-btn-show {
-  min-height: 44px; padding: 0 14px; border: 2px solid var(--bv-brown); background: #fff; border-radius: 10px;
-  font-family: var(--bv-body); font-weight: 700; font-size: 14px; cursor: pointer;
-}
+/* Store name is the keyboard entry point for "show on map" (the card itself handles mouse/touch). */
+.bv-card-name { background: none; border: 0; padding: 0; margin: 0; font: inherit; letter-spacing: inherit; color: inherit; text-align: left; cursor: pointer; border-radius: 4px; }
 .bv-btn-route {
   min-height: 44px; padding: 0 14px; border-radius: 10px; background: var(--bv-brown); color: #fff !important; text-decoration: none;
   font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
@@ -190,8 +189,6 @@
   .bv-input { font-size: 17px; padding: 0 16px; }
   .bv-btn-search { flex-basis: 100%; }
   .bv-card { padding: 14px; }
-  .bv-btn-show { display: none; } /* tapping the card already shows it on the map */
-  .bv-card { cursor: pointer; }
 }
 
 /* Products */

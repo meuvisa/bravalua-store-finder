@@ -230,7 +230,8 @@
       var sel = e.target.closest('[data-select]');
       if (sel) { self.select(sel.getAttribute('data-select'), true); return; }
       var card = e.target.closest('.bv-card');
-      if (card && isMobile() && !e.target.closest('a,button')) self.select(card.getAttribute('data-id'), true);
+      /* The whole card shows the store on the map; only the route link keeps its own action. */
+      if (card && !e.target.closest('a,button')) self.select(card.getAttribute('data-id'), true);
       if (e.target.closest('.bv-sheet-close')) { self.selected = null; self.render(); }
       var tr = e.target.closest('[data-try]');
       if (tr) { self.el.input.value = self.query = tr.getAttribute('data-try'); self.search(self.query); return; }
@@ -431,11 +432,11 @@
     var t = this.t(), sel = s.id === this.selected;
     return '<li class="bv-card' + (sel ? ' is-sel' : '') + '" data-id="' + esc(s.id) + '">' +
       '<div class="bv-card-top"><div>' +
-        '<div class="bv-store-name">' + esc(s.name) + (nearest ? ' <span class="bv-badge">' + esc(t.nearest) + '</span>' : '') + '</div>' +
+        '<div class="bv-store-name"><button type="button" class="bv-card-name" data-select="' + esc(s.id) + '" aria-label="' + esc(s.name + ', ' + s.street + ': ' + t.showMap) + '">' + esc(s.name) + '</button>' +
+          (nearest ? ' <span class="bv-badge">' + esc(t.nearest) + '</span>' : '') + '</div>' +
         '<div class="bv-addr">' + esc(s.street + ', ' + s.plz + ' ' + s.city) + '</div>' +
       '</div>' + (s.d != null ? '<span class="bv-dist">' + fmtKm(s.d, lang) + '</span>' : '') + '</div>' +
       '<div class="bv-actions">' +
-        '<button type="button" class="bv-btn-show" data-select="' + esc(s.id) + '">' + esc(t.showMap) + '</button>' +
         '<a class="bv-btn-route" href="' + esc(routeUrl(s, this.origin)) + '" target="_blank" rel="noopener noreferrer">' + ICON_ROUTE + esc(t.openMaps) + '</a>' +
       '</div></li>';
   };
