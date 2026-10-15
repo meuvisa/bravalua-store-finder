@@ -244,10 +244,16 @@
     if (!q && !preset) { this.origin = null; this.selected = null; this.message = ''; this.render(); return; }
     var p = preset ? Promise.resolve(preset) : geocode(q);
     p.then(function (g) {
-      if (!g) { self.origin = null; self.selected = null; self.message = 'notFound'; self.render(); return; }
+      if (!g) {
+        /* A German postcode outside Berlin is not a typo: say we are not there yet. */
+        self.origin = null; self.selected = null;
+        self.message = /^\d{5}$/.test(q) && !/^1[0-4]\d{3}$/.test(q) ? 'outside' : 'notFound';
+        self.render(); return;
+      }
       self.origin = { lat: g.lat, lng: g.lng, label: q };
-      self.message = 'found';
-      self.selected = self.sorted()[0] ? self.sorted()[0].id : null;
+      var first = self.sorted()[0];
+      self.message = first && first.d > 50 ? 'outside' : 'found';
+      self.selected = first ? first.id : null;
       self.render(true);
       self.afterSearch();
     });
@@ -370,13 +376,13 @@
     el.msg.className = 'bv-msg';
     if (this.message === 'found') {
       el.msg.textContent = t.found(o.label === null ? t.myLocation : o.label);
-    } else if (this.message === 'notFound' || this.message === 'geoError') {
+    } else if (this.message === 'notFound' || this.message === 'outside' || this.message === 'geoError') {
       /* Short warning with one-tap examples instead of a long sentence. */
-      var nf = this.message === 'notFound';
+      var nf = this.message !== 'geoError';
       el.msg.className = 'bv-msg is-error';
       el.msg.innerHTML = '<svg class="bv-msg-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="7" x2="12" y2="13"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>' +
-        '<div class="bv-msg-body"><strong>' + esc(nf ? t.notFound : t.geoErrorTitle) + '</strong>' +
-        '<span>' + esc(nf ? t.notFoundHint : t.geoError) + '</span>' +
+        '<div class="bv-msg-body"><strong>' + esc(this.message === 'outside' ? t.outside : nf ? t.notFound : t.geoErrorTitle) + '</strong>' +
+        '<span>' + esc(this.message === 'outside' ? t.outsideHint : nf ? t.notFoundHint : t.geoError) + '</span>' +
         (nf ? '<div class="bv-try">' + ['10435', 'Kreuzberg', 'Neukölln'].map(function (x) {
           return '<button type="button" data-try="' + esc(x) + '">' + esc(x) + '</button>';
         }).join('') + (el.locate ? '<button type="button" data-try-locate>' + ICON_LOCATE + esc(t.locate) + '</button>' : '') + '</div>' : '') +
