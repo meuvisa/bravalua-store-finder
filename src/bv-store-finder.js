@@ -535,7 +535,7 @@
 
     if (fit && o && list.length) {
       /* Show the searcher plus the three nearest stores. */
-      var b = new g.maps.LatLngBounds();
+      var b = new w.google.maps.LatLngBounds(); /* core class, not part of the "maps" library object */
       b.extend(o);
       list.slice(0, 3).forEach(function (s) { b.extend({ lat: s.lat, lng: s.lng }); });
       this.map.fitBounds(b, isMobile() ? { top: 50, bottom: 140, left: 30, right: 30 } : 70);
