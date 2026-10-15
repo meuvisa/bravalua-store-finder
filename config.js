@@ -3,6 +3,8 @@
 window.BV_CONFIG = {
   apiKey: '',          /* Google Maps API key. Empty = schematic map + offline postcode search */
   mapId: '',           /* Google Map ID (Map Management). Empty = Google's DEMO_MAP_ID */
+  defaultLang: 'pt',   /* first visit opens in Portuguese; switch order is PT, DE, EN */
+  syncHtmlLang: true,
   heroLangs: false,    /* the demo shows DE/EN/PT in the header instead */
   consent: 'click',    /* 'click' = "load map" button (DSGVO); on WordPress use 'complianz' */
   privacyUrl: 'https://bravalua.de/datenschutzerklaerung/'

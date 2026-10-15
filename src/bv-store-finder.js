@@ -6,7 +6,8 @@
  *   consent   'none' | 'click' (show a "load map" button) | 'complianz' (follow the Complianz banner).
  *   heroLangs false = no DE/EN/PT switch inside the block (use a [data-bv-langs] element elsewhere, e.g. the header).
  *   scrollOffset  px kept free above the results when auto-scrolling (sticky headers). Default 12.
- *   privacyUrl, lang ('de' | 'en' | 'pt', otherwise from ?lang=, saved choice or <html lang>).
+ *   defaultLang  language on first visit ('pt' | 'de' | 'en'); ?lang= and the visitor's saved choice win. Fallback: <html lang>.
+ *   privacyUrl, lang (forces a language).
  *   stores    optional list overriding the bundled stores (the WordPress plugin passes them here).
  */
 (function (w, d) {
@@ -14,7 +15,7 @@
 
   var DATA = w.BV_DATA;
   var CFG = Object.assign({ apiKey: '', mapId: '', consent: 'click', privacyUrl: 'https://bravalua.de/datenschutzerklaerung/' }, w.BV_CONFIG || {});
-  var LANGS = [['de', 'Deutsch'], ['en', 'English'], ['pt', 'Português (Brasil)']];
+  var LANGS = [['pt', 'Português (Brasil)'], ['de', 'Deutsch'], ['en', 'English']];
   var BERLIN = { lat: 52.515, lng: 13.40 };
   var PIN_PATH = 'M18 2 C9 2 3 9 3 17 C3 29 18 44 18 44 C18 44 33 29 33 17 C33 9 27 2 18 2 Z';
   var PIN_SVG = '<svg viewBox="0 0 36 46" aria-hidden="true"><path d="' + PIN_PATH + '" stroke="#43291A" stroke-width="3"/><circle cx="18" cy="17" r="6" fill="#fff" stroke="#43291A" stroke-width="2.5"/></svg>';
@@ -48,6 +49,7 @@
     if (q) return q;
     var saved = store(STORE_KEY);
     if (saved && DATA.T[saved]) return saved;
+    if (CFG.defaultLang && DATA.T[CFG.defaultLang]) return CFG.defaultLang;
     var h = (d.documentElement.lang || 'de').slice(0, 2).toLowerCase();
     return DATA.T[h] ? h : 'de';
   }
@@ -621,6 +623,9 @@
         var v = el.getAttribute('data-' + lang); if (v != null) el.textContent = v;
       });
     }
+    /* Keep <html lang> in step with the visible language (screen readers, translation prompts). */
+    if (CFG.syncHtmlLang) langListeners.push(function (l) { d.documentElement.lang = l === 'pt' ? 'pt-BR' : l; });
+    if (CFG.syncHtmlLang) d.documentElement.lang = lang === 'pt' ? 'pt-BR' : lang;
     langListeners.push(syncPage); syncPage();
   }
   if (d.readyState === 'loading') d.addEventListener('DOMContentLoaded', boot); else boot();
