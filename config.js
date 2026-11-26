@@ -7,5 +7,6 @@ window.BV_CONFIG = {
   syncHtmlLang: true,
   heroLangs: false,    /* the demo shows DE/EN/PT in the header instead */
   consent: 'none',     /* demo loads the map directly; on bravalua.de use 'complianz' (follows the cookie banner) */
+  analyticsUrl: 'https://europe-west1-meu-visa-portal.cloudfunctions.net/bravaluaHit', /* anonymous visits -> Meu Data, tab Bravalua */
   privacyUrl: 'https://bravalua.de/datenschutzerklaerung/'
 };

@@ -7,8 +7,11 @@
  *   heroLangs false = no DE/EN/PT switch inside the block (use a [data-bv-langs] element elsewhere, e.g. the header).
  *   scrollOffset  px kept free above the results when auto-scrolling (sticky headers). Default 12.
  *   defaultLang  language on first visit ('pt' | 'de' | 'en'); ?lang= and the visitor's saved choice win. Fallback: <html lang>.
+ *   analyticsUrl  optional endpoint for anonymous usage events (no cookies, no typed text; see track()).
  *   privacyUrl, lang (forces a language).
  *   stores    optional list overriding the bundled stores (the WordPress plugin passes them here).
+ *   products  optional list overriding the bundled products, same shape as BV_DATA.PRODUCTS:
+ *             { img, pt: { name, alt, desc, tags: [] }, de: {...}, en: {...} }. An empty list shows no products.
  */
 (function (w, d) {
   'use strict';
@@ -60,8 +63,22 @@
   function setLang(l) {
     if (l === lang) return;
     lang = l; store(STORE_KEY, l);
+    track('lang');
     langListeners.forEach(function (fn) { fn(l); });
   }
+  /* Anonymous usage events for the owner's dashboard: no cookie, no storage, never the typed
+     search text (only a bare 5-digit PLZ). Fire-and-forget; failures are ignored. */
+  function track(tipo, extra) {
+    if (!CFG.analyticsUrl) return;
+    var ref = null;
+    try { var r = d.referrer && new URL(d.referrer).hostname; if (r && r !== w.location.hostname) ref = r.replace(/^www\./, ''); } catch (e) {}
+    var body = JSON.stringify(Object.assign({ tipo: tipo, lang: lang, device: isMobile() ? 'mobile' : 'desktop', ref: ref }, extra || {}));
+    try {
+      if (navigator.sendBeacon && navigator.sendBeacon(CFG.analyticsUrl, new Blob([body], { type: 'text/plain' }))) return;
+      w.fetch(CFG.analyticsUrl, { method: 'POST', body: body, headers: { 'Content-Type': 'text/plain' }, keepalive: true, mode: 'cors' }).catch(function () {});
+    } catch (e) {}
+  }
+
   function langButtons(extra) {
     return '<div class="bv-langs' + (extra || '') + '" role="group" aria-label="Sprache / Language / Idioma">' + LANGS.map(function (l) {
       return '<button type="button" class="bv-lang" data-lang="' + l[0] + '" aria-pressed="' + (lang === l[0]) + '" aria-label="' + l[1] + '" lang="' + l[0] + '">' + l[0].toUpperCase() + '</button>';
@@ -123,7 +140,8 @@
   /* ---------- Store Finder ---------- */
   function StoreFinder(root) {
     this.root = root;
-    this.stores = (CFG.stores && CFG.stores.length ? CFG.stores : DATA.STORES).map(function (s) {
+    /* A list from the config wins even when empty (all stores inactive in WordPress). */
+    this.stores = (Array.isArray(CFG.stores) ? CFG.stores : DATA.STORES).map(function (s) {
       return Object.assign({}, s, { lat: +s.lat, lng: +s.lng });
     });
     this.origin = null;      /* { lat, lng, label } ; label null = device location */
@@ -133,6 +151,7 @@
     this.map = null;         /* Google map renderer, once loaded */
     this.uid = 'bv' + Math.random().toString(36).slice(2, 7);
     this.build();
+    track('view');
     var self = this;
     langListeners.push(function () { self.rebuild(); });
     if (hasConsent()) this.startGoogle();
@@ -233,6 +252,8 @@
       /* The whole card shows the store on the map; only the route link keeps its own action. */
       if (card && !e.target.closest('a,button')) self.select(card.getAttribute('data-id'), true);
       if (e.target.closest('.bv-sheet-close')) { self.selected = null; self.render(); }
+      var rt = e.target.closest('.bv-btn-route[data-id]');
+      if (rt) { var rs = self.storeById(rt.getAttribute('data-id')); track('route', { store: rs && rs.id, storeName: rs && rs.name, distKm: rs && rs.d }); return; }
       var tr = e.target.closest('[data-try]');
       if (tr) { self.el.input.value = self.query = tr.getAttribute('data-try'); self.search(self.query); return; }
       if (e.target.closest('[data-try-locate]')) { self.locate(); return; }
@@ -241,8 +262,10 @@
   };
 
   /* ----- search ----- */
-  StoreFinder.prototype.search = function (text, preset) {
+  StoreFinder.prototype.search = function (text, preset, silent) {
     var self = this, t = this.t(), q = (text || '').trim();
+    var plz = /^\d{5}$/.test(q) ? q : null;
+    var kind = preset ? 'suggestion' : plz ? 'plz' : 'address';
     this.closeSuggest();
     if (!q && !preset) { this.origin = null; this.selected = null; this.message = ''; this.render(); return; }
     var p = preset ? Promise.resolve(preset) : geocode(q);
@@ -251,12 +274,14 @@
         /* A German postcode outside Berlin is not a typo: say we are not there yet. */
         self.origin = null; self.selected = null;
         self.message = /^\d{5}$/.test(q) && !/^1[0-4]\d{3}$/.test(q) ? 'outside' : 'notFound';
+        if (!silent) track('search', { kind: kind, plz: plz, result: self.message });
         self.render(); return;
       }
       self.origin = { lat: g.lat, lng: g.lng, label: q };
       var first = self.sorted()[0];
       self.message = first && first.d > 50 ? 'outside' : 'found';
       self.selected = first ? first.id : null;
+      if (!silent) track('search', { kind: kind, plz: plz, result: self.message, store: first && first.id, storeName: first && first.name, distKm: first && first.d });
       self.render(true);
       self.afterSearch();
     });
@@ -268,12 +293,15 @@
     navigator.geolocation.getCurrentPosition(function (p) {
       self.origin = { lat: p.coords.latitude, lng: p.coords.longitude, label: null };
       self.query = ''; self.el.input.value = '';
-      self.message = 'found';
-      self.selected = self.sorted()[0].id;
+      var first = self.sorted()[0];
+      self.message = first && first.d > 50 ? 'outside' : 'found';
+      self.selected = first ? first.id : null;
+      track('locate', { kind: 'location', result: self.message, store: first && first.id, storeName: first && first.name, distKm: first && first.d });
       self.render(true);
       self.afterSearch();
     }, function () {
       self.message = 'geoError'; self.render();
+      track('locate', { kind: 'location', result: 'error' });
     }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
   };
 
@@ -352,7 +380,12 @@
   };
 
   /* ----- selection ----- */
+  StoreFinder.prototype.storeById = function (id) {
+    return this.sorted().filter(function (s) { return s.id === id; })[0];
+  };
+
   StoreFinder.prototype.select = function (id, fromUser) {
+    if (fromUser) { var st = this.storeById(id); track('store', { store: id, storeName: st && st.name, distKm: st && st.d }); }
     this.selected = id;
     this.render();
     if (this.map) this.map.focus(id);
@@ -415,7 +448,7 @@
       el.sheet.innerHTML = '<div class="bv-sheet-top"><div><div class="bv-store-name">' + esc(sel.name) + (sel.id === nearestId ? ' <span class="bv-badge">' + esc(t.nearest) + '</span>' : '') + '</div>' +
         '<div class="bv-addr">' + esc(sel.street + ', ' + sel.plz + ' ' + sel.city) + ' · <b>' + fmtKm(sel.d, lang) + '</b></div></div>' +
         '<button type="button" class="bv-sheet-close" aria-label="' + esc(t.close) + '">×</button></div>' +
-        '<div class="bv-actions"><a class="bv-btn-route" href="' + esc(routeUrl(sel, o)) + '" target="_blank" rel="noopener noreferrer">' + ICON_ROUTE + esc(t.openMaps) + '</a></div>';
+        '<div class="bv-actions"><a class="bv-btn-route" data-id="' + esc(sel.id) + '" href="' + esc(routeUrl(sel, o)) + '" target="_blank" rel="noopener noreferrer">' + ICON_ROUTE + esc(t.openMaps) + '</a></div>';
       el.sheet.setAttribute('aria-label', sel.name);
       el.sheet.classList.add('is-open');
     } else {
@@ -437,7 +470,7 @@
         '<div class="bv-addr">' + esc(s.street + ', ' + s.plz + ' ' + s.city) + '</div>' +
       '</div>' + (s.d != null ? '<span class="bv-dist">' + fmtKm(s.d, lang) + '</span>' : '') + '</div>' +
       '<div class="bv-actions">' +
-        '<a class="bv-btn-route" href="' + esc(routeUrl(s, this.origin)) + '" target="_blank" rel="noopener noreferrer">' + ICON_ROUTE + esc(t.openMaps) + '</a>' +
+        '<a class="bv-btn-route" data-id="' + esc(s.id) + '" href="' + esc(routeUrl(s, this.origin)) + '" target="_blank" rel="noopener noreferrer">' + ICON_ROUTE + esc(t.openMaps) + '</a>' +
       '</div></li>';
   };
 
@@ -489,7 +522,7 @@
       self.starting = false;
       self.render(true);
       /* An offline search can now be refined with real geocoding. */
-      if (self.origin && self.origin.label) self.search(self.origin.label);
+      if (self.origin && self.origin.label) self.search(self.origin.label, null, true);
     }).catch(function () { self.starting = false; });
   };
 
@@ -560,13 +593,23 @@
   }
   Products.prototype.build = function () {
     var t = DATA.T[lang], id = 'bvp' + Math.random().toString(36).slice(2, 7);
-    var items = DATA.PRODUCTS.map(function (p) { return Object.assign({ img: p.img }, p[lang]); });
+    var src = Array.isArray(CFG.products) ? CFG.products : DATA.PRODUCTS;
+    /* A text missing in one language falls back to PT, then DE, so a half-filled product still shows. */
+    var items = src.map(function (p) {
+      var f = {};
+      ['name', 'alt', 'desc', 'tags'].forEach(function (k) {
+        var v = [lang, 'pt', 'de', 'en'].map(function (l) { return p[l] && p[l][k]; }).filter(function (x) { return x && (!Array.isArray(x) || x.length); })[0];
+        f[k] = v || (k === 'tags' ? [] : '');
+      });
+      return Object.assign({ img: p.img }, f);
+    });
     this.root.classList.add('bv-root');
+    if (!items.length) { this.root.innerHTML = ''; return; }
     this.root.innerHTML = '<section class="bv-products" aria-labelledby="' + id + '"><div class="bv-wrap">' +
       '<div class="bv-products-head"><h2 id="' + id + '">' + esc(t.products) + '</h2><p>' + esc(t.productsSub) + '</p></div>' +
       '<ul class="bv-track">' + items.map(function (p, i) {
         return '<li class="bv-product" aria-label="' + esc(t.productOf(i + 1, items.length)) + '">' +
-          '<img src="' + esc(p.img) + '" alt="' + esc(p.name) + '" width="546" height="378" loading="lazy" decoding="async">' +
+          (p.img ? '<img src="' + esc(p.img) + '" alt="' + esc(p.name) + '" width="546" height="378" loading="lazy" decoding="async">' : '') +
           '<div class="bv-product-body"><div><h3>' + esc(p.name) + '</h3><span class="bv-product-alt">' + esc(p.alt) + '</span></div>' +
           '<p>' + esc(p.desc) + '</p><ul class="bv-tags">' + p.tags.map(function (tg) { return '<li>' + esc(tg) + '</li>'; }).join('') + '</ul></div></li>';
       }).join('') + '</ul>' +

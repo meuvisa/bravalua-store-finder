@@ -3,3 +3,6 @@
 LEIA-ME-CLAUDE-CODE.md
 design/
 config.local.js
+
+# WordPress plugin build output (rebuild with wordpress-plugin/build.sh)
+wordpress-plugin/dist/
